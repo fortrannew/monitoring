@@ -1,0 +1,6 @@
+.map_plan{
+  width: 100%;
+  /* height: calc(100vh - 126px - 57px); */
+  height: calc(100vh - 20px);
+  overflow: hidden;
+}

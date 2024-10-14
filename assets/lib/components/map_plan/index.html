@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ru" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <link rel="stylesheet" href="style.css">
+    <script src="map-plan.js" charset="utf-8"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  </head>
+  <body>
+    <div id="map_plan" class="map_plan"></div>
+    <script>
+      map_plan.init('map_plan');
+      map_plan.add_background('https://raw.githubusercontent.com/fortrannew/map-plan/refs/heads/main/map.png');
+      map_plan.marker.add(); //{position:[10,10]}
+      // map_plan.add_marker(100,100);
+      // // map_plan.set_pos(-100,0);
+      // // map_plan.zoom=5;
+    </script>
+  </body>
+</html>
