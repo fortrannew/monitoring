@@ -11,11 +11,22 @@
     <div id="map_plan" class="map_plan"></div>
     <script>
       map_plan.init('map_plan');
-      map_plan.add_background('https://raw.githubusercontent.com/fortrannew/map-plan/refs/heads/main/map.png');
-      map_plan.marker.add(); //{position:[10,10]}
+      map_plan.add_background('[imgBackground]');
+      // map_plan.marker.add(); //{position:[10,10]}
       // map_plan.add_marker(100,100);
       // // map_plan.set_pos(-100,0);
       // // map_plan.zoom=5;
+      //
+      // для установки центра карты:
+      // map_plan.marker.add({position:[900,800]});
+      // map_plan.center_x=900
+      // map_plan.center_y=800
+      //
+      // для получения всех координат:
+      // map_plan.marker.get_position()
+      //
+      // для запрета перемещать метки
+      // map_plan.moving_marker=false
     </script>
   </body>
 </html>

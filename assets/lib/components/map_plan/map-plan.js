@@ -9,6 +9,8 @@ class lcp_map_plan {
     this.height_orig = 0;
     this.marker = new lcp_list_marker(this);
     this.moving_marker = true;
+    this.moving_marker_index = null; // Хранит индекс маркера, который перемещается
+    this.is_touching = false;
   }
 
 
@@ -84,6 +86,83 @@ class lcp_map_plan {
 
 
 
+    // Поддержка тачпада
+    self.canvas.addEventListener('touchstart', function (e) {
+      if (e.touches.length == 2) {
+        self.is_touching = true;
+        self.last_dist = self.get_distance(e.touches);
+      } else if (e.touches.length == 1) {
+        self.is_touching = false;
+        let touch = e.touches[0];
+        self.start_x = touch.clientX;
+        self.start_y = touch.clientY;
+
+        var hover_marker_index = self.hover_marker_touch(touch.clientX, touch.clientY, self);
+        
+        if (hover_marker_index !== false) {
+          if (self.moving_marker==false){
+            self.moving_marker_index = null;
+          } else {
+            self.moving_marker_index = hover_marker_index; // Сохраняем индекс маркера
+          }
+        } else {
+          self.moving_marker_index = null; // Если не маркер, то не перемещаем
+        }
+      }
+    });
+
+    self.canvas.addEventListener('touchmove', function (e) {
+      if (self.is_touching && e.touches.length == 2) {
+        let new_dist = self.get_distance(e.touches);
+        let scale_change = new_dist / self.last_dist;
+        self.zoom *= scale_change;
+
+        if (self.zoom > self.scale_max) {
+          self.zoom = self.scale_max;
+        }
+        if (self.zoom < 0.1) {
+          self.zoom = 0.1;
+        }
+
+        // Центрирование масштаба
+        let center_x = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        let center_y = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+        let mouse_x_rel = (center_x - self.pos_x) / self.zoom;
+        let mouse_y_rel = (center_y - self.pos_y) / self.zoom;
+
+        self.pos_x = center_x - mouse_x_rel * self.zoom;
+        self.pos_y = center_y - mouse_y_rel * self.zoom;
+
+        self.last_dist = new_dist;
+        self.repaint();
+
+        e.preventDefault();
+      } else if (e.touches.length == 1) {
+        let move_x = e.touches[0].clientX - self.start_x;
+        let move_y = e.touches[0].clientY - self.start_y;
+
+        if (self.moving_marker_index !== null) {
+          self.marker.items[self.moving_marker_index].pos_x += move_x;
+          self.marker.items[self.moving_marker_index].pos_y += move_y;
+        } else {
+          self.pos_x += move_x;
+          self.pos_y += move_y;
+        }
+
+        self.start_x = e.touches[0].clientX;
+        self.start_y = e.touches[0].clientY;
+
+        self.repaint();
+
+        e.preventDefault();
+      }
+    });
+
+    self.canvas.addEventListener('touchend', function (e) {
+      self.moving_marker_index = null; // Завершаем перемещение маркера
+    });
+
     // style
     let style = document.createElement('style');
     style.media = 'screen';
@@ -112,7 +191,14 @@ class lcp_map_plan {
     return document.getElementById(obj_id);
   }
 
-
+  // Вычисление расстояния между двумя пальцами (для pinch-жеста)
+  get_distance(touches) {
+    let touch1 = touches[0];
+    let touch2 = touches[1];
+    let dx = touch1.clientX - touch2.clientX;
+    let dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
 
   // добавление фона изображения (path - string)
   add_background(path) {
@@ -222,18 +308,30 @@ class lcp_map_plan {
 
 
 
-  // // получение центра карты исходя из оригинальных размеров с учетом коэффициента масштабирования
+  // получение центра карты исходя из оригинальных размеров без учета коэффициента масштабирования (по реальным неизменяющимся координатам)
   get center_x() {
     var self = this;
-    return self.canvas_width / 2 + self.pos_x;
+    return self.zoom_coefficient_orig(self.pos_x)* (-1) + self.zoom_coefficient_orig(self.canvas_width / 2);
+  }
+
+  get center_y() {
+    var self = this;
+    return self.zoom_coefficient_orig(self.pos_y)* (-1) + self.zoom_coefficient_orig(self.canvas_height / 2);
   }
 
   // установить центр карты исходя из оригинальных размеров без учета коэффициента масштабирования с визуальным перемещением
   set center_x(x) {
     var self = this;
-    self.pos_x = x - self.canvas_width / 2;
-    self.repaint_background();
-    self.marker.repaint_all_marker();
+    var res = x - self.zoom_coefficient_orig(self.canvas_width / 2);
+    self.pos_x = self.zoom_coefficient(res * (-1));
+    self.repaint();
+  }
+
+  set center_y(y) {
+    var self = this;
+    var res = y - self.zoom_coefficient_orig(self.canvas_height / 2);
+    self.pos_y = self.zoom_coefficient(res * (-1));
+    self.repaint();
   }
 
 
@@ -371,6 +469,24 @@ class lcp_map_plan {
 
 
 
+  hover_marker_touch(touch_x, touch_y, self) {
+    for (let i = 0; i < self.marker.items.length; i++) {
+      let marker = self.marker.items[i];
+      let marker_x = marker.pos_x;
+      let marker_y = marker.pos_y;
+      let marker_radius = marker.radius || 10; // Радиус маркера
+
+      if (
+        touch_x >= marker_x - marker_radius &&
+        touch_x <= marker_x + marker_radius &&
+        touch_y >= marker_y - marker_radius &&
+        touch_y <= marker_y + marker_radius
+      ) {
+        return i;
+      }
+    }
+    return false;
+  }
 
   // очистить весь фон
   clear_all() {
