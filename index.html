@@ -31,9 +31,60 @@
 
   <title>KEMBRI</title>
   <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="loading.css">
+  <style>
+  .loading_hidden{
+    display: none;
+  }
+  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="application/javascript" src="/assets/packages/flutter_inappwebview_web/assets/web/web_support.js" defer></script>
 </head>
 <body>
+  <div class="loading_default loading_default_block_img">
+    <div class="loading_default_img_back">
+      <div class="loading_default_img_logo_scale">
+        <div class="loading_default_img_logo" style="background-image:url('/icons/Icon-192.png');"></div>
+      </div>
+    </div>
+    <!-- <div class="loading_default_block_title_footer_img">Пожалуйста, подождите...</div> -->
+  </div>
+  <script>
+  function lcp_loading_default(param){
+    if (typeof param==='undefined'){
+      param = {};
+    }
+    var loading_show = param['loading_show'];
+    if (loading_show === 'true'){
+      lcp_loading_default_show();
+    } else {
+      lcp_loading_default_hidden();
+    }
+  }
+
+  function lcp_loading_default_show(){
+    document.body.classList.add('body_scroll_loading');
+    document.querySelector('.loading_default')?.classList.remove('loading_hidden');
+  }
+
+  function lcp_loading_default_hidden(){
+    document.body.classList.remove('body_scroll_loading');
+    document.querySelector('.loading_default')?.classList.add('loading_hidden');
+  }
+  </script>
+  <script>
+  lcp_loading_default({'loading_show': 'true'});
+
+  const observer = new MutationObserver((mutationsList, observer) => {
+    const canvas = document.querySelector('flt-glass-pane') || document.querySelector('canvas');
+    if (canvas) {
+      lcp_loading_default({'loading_show': 'false'});
+      observer.disconnect();
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
