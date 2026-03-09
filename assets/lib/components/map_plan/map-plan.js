@@ -474,13 +474,15 @@ class lcp_map_plan {
       let marker = self.marker.items[i];
       let marker_x = marker.pos_x;
       let marker_y = marker.pos_y;
-      let marker_radius = marker.radius || 10; // Радиус маркера
+      let half_w = Number(marker.width) / 2;
+      let half_h = Number(marker.height) / 2;
+      if (marker.type === 'rect' && half_w === half_h) { half_w = 12; half_h = 8; }
 
       if (
-        touch_x >= marker_x - marker_radius &&
-        touch_x <= marker_x + marker_radius &&
-        touch_y >= marker_y - marker_radius &&
-        touch_y <= marker_y + marker_radius
+        touch_x >= marker_x - half_w &&
+        touch_x <= marker_x + half_w &&
+        touch_y >= marker_y - half_h &&
+        touch_y <= marker_y + half_h
       ) {
         return i;
       }
@@ -572,12 +574,12 @@ class lcp_marker {
     this.width = (typeof param['width'] !== 'undefined') ? param['width'] : '20';
     this.height = (typeof param['height'] !== 'undefined') ? param['height'] : '20';
     this.color = (typeof param['color'] !== 'undefined') ? param['color'] : '#ff0000';
+    this.label = (typeof param['label'] !== 'undefined' && param['label']) ? String(param['label']) : '';
     this.pos_x_orig = (typeof param['position'] !== 'undefined') ? Number(Number(param['position'][0]) + Number(this.parent.pos_x_orig)) : this.parent.zoom_coefficient_orig(this.parent.canvas_width / 2);
     this.pos_y_orig = (typeof param['position'] !== 'undefined') ? Number(Number(param['position'][1]) + Number(this.parent.pos_y_orig)) : this.parent.zoom_coefficient_orig(this.parent.canvas_height / 2);
     if (typeof param['onclick'] !== 'undefined'){
       this.onclick =  param['onclick'];
     }
-    console.log(this.pos_x_orig);
   }
 
   get pos_x() {
@@ -602,6 +604,7 @@ class lcp_marker {
 
   repaint_marker() {
     var self = this;
+    var markerBottomY = self.pos_y;
     if (self.type == 'circle') {
       self.parent.ctx.beginPath();
       self.parent.ctx.strokeStyle = self.color;
@@ -614,6 +617,46 @@ class lcp_marker {
       self.parent.ctx.arc(self.pos_x, self.pos_y, 4, 0, 2 * Math.PI, false);
       self.parent.ctx.fill();
       self.parent.ctx.closePath();
+      markerBottomY = self.pos_y + self.width / 2;
+    } else if (self.type == 'rect') {
+      var w = Number(self.width);
+      var h = Number(self.height);
+      if (w === h) { w = 24; h = 16; }
+      var x = self.pos_x - w / 2;
+      var y = self.pos_y - h / 2;
+      self.parent.ctx.beginPath();
+      self.parent.ctx.strokeStyle = self.color;
+      self.parent.ctx.lineWidth = '5';
+      self.parent.ctx.strokeRect(x, y, w, h);
+      self.parent.ctx.closePath();
+      self.parent.ctx.beginPath();
+      self.parent.ctx.fillStyle = self.color;
+      self.parent.ctx.fillRect(self.pos_x - 4, self.pos_y - 4, 8, 8);
+      self.parent.ctx.closePath();
+      markerBottomY = self.pos_y + h / 2;
+    }
+    if (self.label) {
+      var ctx = self.parent.ctx;
+      var pad = 4;
+      var fontSize = 16;
+      ctx.font = fontSize + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      var metrics = ctx.measureText(self.label);
+      var tw = metrics.width;
+      var th = fontSize + 2;
+      var labelTop = markerBottomY + 4;
+      var boxX = self.pos_x - tw / 2 - pad;
+      var boxY = labelTop;
+      var boxW = tw + pad * 2;
+      var boxH = th + pad * 2;
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+      ctx.lineWidth = 1;
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+      ctx.strokeRect(boxX, boxY, boxW, boxH);
+      ctx.fillStyle = '#111';
+      ctx.fillText(self.label, self.pos_x, labelTop + pad);
     }
   }
 }
