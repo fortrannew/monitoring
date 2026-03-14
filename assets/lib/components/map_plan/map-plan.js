@@ -575,10 +575,23 @@ class lcp_marker {
     this.height = (typeof param['height'] !== 'undefined') ? param['height'] : '20';
     this.color = (typeof param['color'] !== 'undefined') ? param['color'] : '#ff0000';
     this.label = (typeof param['label'] !== 'undefined' && param['label']) ? String(param['label']) : '';
+    this.balloon_html = (typeof param['balloon_html'] !== 'undefined' && param['balloon_html']) ? String(param['balloon_html']) : '';
+    this.balloonEl = null;
     this.pos_x_orig = (typeof param['position'] !== 'undefined') ? Number(Number(param['position'][0]) + Number(this.parent.pos_x_orig)) : this.parent.zoom_coefficient_orig(this.parent.canvas_width / 2);
     this.pos_y_orig = (typeof param['position'] !== 'undefined') ? Number(Number(param['position'][1]) + Number(this.parent.pos_y_orig)) : this.parent.zoom_coefficient_orig(this.parent.canvas_height / 2);
-    if (typeof param['onclick'] !== 'undefined'){
-      this.onclick =  param['onclick'];
+    // обработчик клика по маркеру:
+    // - если передан param.onclick, используем его
+    // - иначе, если есть balloon_html, показываем HTML-balloon
+    var self = this;
+    if (typeof param['onclick'] !== 'undefined') {
+      this.onclick = param['onclick'];
+    } else if (this.balloon_html) {
+      this.onclick = function () {
+        if (self.parent && self.parent.marker && typeof self.parent.marker.hide_all_balloons === 'function') {
+          self.parent.marker.hide_all_balloons();
+        }
+        self.showBalloon();
+      };
     }
   }
 
@@ -658,6 +671,64 @@ class lcp_marker {
       ctx.fillStyle = '#111';
       ctx.fillText(self.label, self.pos_x, labelTop + pad);
     }
+    // при каждой перерисовке обновляем позицию balloon (если он открыт)
+    if (self.balloonEl && self.balloonEl.style.display !== 'none') {
+      self.updateBalloonPosition();
+    }
+  }
+
+  // Показать HTML-balloon над маркером
+  showBalloon() {
+    var self = this;
+    if (!self.balloon_html) {
+      return;
+    }
+    if (!self.balloonEl) {
+      var div = document.createElement('div');
+      div.className = 'map-plan-balloon';
+      div.style.position = 'absolute';
+      div.style.transform = 'translate(-50%, -100%)';
+      div.style.pointerEvents = 'auto';
+      div.innerHTML = '<div class="map-plan-balloon-inner"><button type="button" class="map-plan-balloon-close" aria-label="Закрыть">×</button>' + self.balloon_html + '</div>';
+      // защитимся от протаскивания карты при взаимодействии с balloon
+      div.addEventListener('mousedown', function (e) {
+        e.stopPropagation();
+      });
+      div.addEventListener('mousemove', function (e) {
+        e.stopPropagation();
+      });
+      // обработчик на крестике
+      var btn = div.querySelector('.map-plan-balloon-close');
+      if (btn) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          self.hideBalloon();
+        });
+      }
+      self.parent.obj.appendChild(div);
+      self.balloonEl = div;
+    }
+    self.balloonEl.style.display = 'block';
+    self.updateBalloonPosition();
+  }
+
+  // Спрятать balloon
+  hideBalloon() {
+    if (this.balloonEl) {
+      this.balloonEl.style.display = 'none';
+    }
+  }
+
+  // Пересчитать координаты balloon при изменении масштаба/позиции карты
+  updateBalloonPosition() {
+    if (!this.balloonEl) {
+      return;
+    }
+    // координаты маркера в системе canvas
+    var x = this.pos_x;
+    var y = this.pos_y;
+    this.balloonEl.style.left = x + 'px';
+    this.balloonEl.style.top = (y - 10) + 'px';
   }
 }
 
@@ -680,8 +751,22 @@ class lcp_list_marker {
   }
   clear(){
     var self = this;
+    // удалить все balloon из DOM
+    for (var i = 0; i < self.items.length; i++) {
+      if (self.items[i].balloonEl && self.items[i].balloonEl.parentNode) {
+        self.items[i].balloonEl.parentNode.removeChild(self.items[i].balloonEl);
+      }
+    }
     self.items=[];
     self.active=-1;
+  }
+  hide_all_balloons() {
+    var self = this;
+    for (var i = 0; i < self.items.length; i++) {
+      if (typeof self.items[i].hideBalloon === 'function') {
+        self.items[i].hideBalloon();
+      }
+    }
   }
   get length() {
     var self = this;

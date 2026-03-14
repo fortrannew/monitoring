@@ -4,3 +4,66 @@
   height: calc(100vh - 20px);
   overflow: hidden;
 }
+
+.map-plan-balloon {
+  max-width: 260px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 0;
+  color: #111;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  z-index: 10;
+  box-sizing: border-box;
+}
+
+.map-plan-balloon-inner {
+  position: relative;
+  padding: 12px 28px 10px 12px; /* справа место под крестик */
+}
+
+.map-plan-balloon-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.06);
+  color: #444;
+  font-size: 13px;
+  line-height: 18px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.map-plan-balloon-close:hover {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.map-plan-balloon img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.map-plan-balloon h1,
+.map-plan-balloon h2,
+.map-plan-balloon h3,
+.map-plan-balloon h4,
+.map-plan-balloon h5,
+.map-plan-balloon h6 {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.map-plan-balloon p {
+  margin: 0 0 6px 0;
+}
